@@ -44,11 +44,9 @@ dependencies[] = insert_block
 dependencies[] = references
 dependencies[] = tablefield
 dependencies[] = markdown
-dependencies[] = ajax_markup
 
 dependencies[] = focal_point
 dependencies[] = insert
-dependencies[] = styleguide
 
 ;Image Modules
 dependencies[] = image_style_quality
