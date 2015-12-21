@@ -1,0 +1,730 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the standard installation profile.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Perform actions to set up the site for this profile.
+ *
+ * @see system_install()
+ */
+function eventpal_install() {
+	
+	
+	// NODE TYPE OPTIONS 
+	
+	variable_set('node_options_page', array('status'));
+	// hide comments for this node
+	variable_set('comment_page', 'COMMENT_NODE_HIDDEN');
+	// Hide date and author information
+	variable_set('node_submitted_page', FALSE);
+	
+	
+	// Default "Basic page" to not be promoted and have comments disabled.
+	variable_set('node_options_page', array('status'));
+	variable_set('comment_page', COMMENT_NODE_HIDDEN);
+	
+	// Don't display date and author information for "Basic page" nodes by default.
+	variable_set('node_submitted_page', FALSE);
+	
+	// Enable user picture support and set the default to a square thumbnail option.
+	variable_set('user_pictures', '1');
+	variable_set('user_picture_dimensions', '1024x1024');
+	variable_set('user_picture_file_size', '800');
+	variable_set('user_picture_style', 'thumbnail');
+	
+	  // Allow visitor account creation with administrative approval.
+	variable_set('user_register', USER_REGISTER_ADMINISTRATORS_ONLY);
+	variable_set('admin_theme', 'seven');
+	variable_set('node_admin_theme', '1');
+	
+	variable_set('theme_default', 'evental');
+	variable_set('admin_theme', 'seven');
+	
+		
+	variable_set("clean_url", 0);
+	
+	variable_set("date_default_timezone", 'Europe/Berlin');
+	variable_set("date_first_day", '1');
+	variable_set("date_format_long", 'l, d. M. Y');
+	variable_set("date_format_medium", 'd. M. Y');
+	variable_set("date_format_short", 'd.m.Y');
+	variable_set("date_format_time", 'H:i');
+	
+	variable_set("jquery_update_compression_type", 'min');
+	variable_set("jquery_update_jquery_admin_version", 'default');
+	variable_set("jquery_update_jquery_cdn", 'none');
+	variable_set("jquery_update_jquery_version", '1.10');
+	
+	variable_set("site_default_country", 'DE');
+	
+	variable_set("site_403", '');
+	variable_set("site_404", '');
+		
+	variable_set('file_public_path', conf_path() . '/files');
+	variable_set('file_private_path', conf_path() . '/files/private');
+	variable_set('file_temporary_path', '/tmp');
+ 
+
+
+  // Create a default role for site administrators, with all available permissions assigned.
+  $admin_role = new stdClass();
+  $admin_role->name = 'administrator';
+  $admin_role->weight = 2;
+  user_role_save($admin_role);
+  user_role_grant_permissions($admin_role->rid, array_keys(module_invoke_all('permission')));
+  // Set this as the administrator role.
+  variable_set('user_admin_role', $admin_role->rid);
+
+  // Assign user 1 the "administrator" role.
+  db_insert('users_roles')
+    ->fields(array('uid' => 1, 'rid' => $admin_role->rid))
+    ->execute();
+   
+  // Enable the admin theme.
+  /*
+  db_update('system')
+    ->fields(array('status' => 1))
+    ->condition('type', 'theme')
+    ->condition('name', 'seven')
+    ->execute();
+	*/
+	
+	druplaevental_create_text_formats();
+	druplaevental_create_content_types();
+	druplaevental_create_imagestyles();	
+	druplaevental_create_fields();
+	eventpal_enable_theme();
+	druplaevental_create_content();
+	
+	 // Create a Menu link for STyleguide in the main menu.
+	  $guide = array(
+	    'link_title' => 'Styleguide',
+	    'link_path' => '/admin/appearance/styleguide',
+	    'menu_name' => 'main-menu',
+	    'weight' => 1,
+	  );
+	  menu_link_save($guide);
+	
+	// Update the menu router information.
+	menu_rebuild();
+}
+
+
+function eventpal_enable_theme(){
+	
+	// Enable some standard blocks.
+  $default_theme = variable_get('theme_default', 'evental');
+  $admin_theme = variable_get('admin_theme', 'seven');
+
+  $blocks = array(
+    array(
+      'module' => 'system',
+      'delta' => 'main',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'content',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'main-menu',
+      'theme' => $default_theme,
+      'status' => 0,
+      'weight' => 0,
+      'region' => 'header',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'navigation',
+      'theme' => $default_theme,
+      'status' => 0,
+      'weight' => 0,
+      'region' => 'header',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'main',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'content',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system',
+      'delta' => 'help',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'help',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'user',
+      'delta' => 'login',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 10,
+      'region' => 'content',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'user',
+      'delta' => 'new',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'dashboard_sidebar',
+      'pages' => '',
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'search',
+      'delta' => 'form',
+      'theme' => $admin_theme,
+      'status' => 1,
+      'weight' => -10,
+      'region' => 'dashboard_sidebar',
+      'pages' => '',
+      'cache' => -1,
+    ),
+  );
+  $query = db_insert('block')->fields(array('module', 'delta', 'theme', 'status', 'weight', 'region', 'pages', 'cache'));
+  foreach ($blocks as $block) {
+    $query->values($block);
+  }
+  $query->execute();
+  
+    
+  $enable = array(
+    'theme_default' => $default_theme,
+    'admin_theme' => $admin_theme,
+    //'zen'
+  );
+  theme_enable($enable);
+
+  foreach ($enable as $var => $theme) {
+    if (!is_numeric($var)) {
+      variable_set($var, $theme);
+    }
+  }
+  
+  // Disable the default Bartik theme
+  theme_disable(array('bartik'));
+
+
+
+}
+
+function druplaevental_create_content($dir = 'content', $ext = 'html', $account = NULL) {  
+  $path = dirname(__FILE__);
+  
+   $files = file_scan_directory($path . '/' . $dir, '/.*\.html$/');
+      
+   asort($files);
+   
+   $count = 0;
+ 
+  foreach ($files as $file) {
+    
+    print 'Try importing: '.$path.'/'.$dir.'/'.$file->filename;
+    
+	$title = preg_replace('/\\.[^.\\s]{3,4}$/', '', $file->filename);
+	$body = file_get_contents($path.'/'.$dir.'/'.$file->filename);
+	
+	druplaevental_create_node($count,'page',$title,$body);
+    
+    print "Node ".$file->filename." imported";
+    
+    $count+=1;
+    
+  }
+  
+  if(!empty($files)){
+	  variable_set('site_frontpage', 'node/1');
+  }
+     	  		
+}
+
+function druplaevental_create_node($weight, $type, $title, $body){
+
+	$node = new stdClass(); // Create a new node object
+	$node->type = $type; // Or page, or whatever content type you like
+	node_object_prepare($node); // Set some default values
+	
+	//split tile
+	$title_array = explode("_",$title);
+	if(count($title_array) > 1){
+		$node->title = $title_array[1];
+	}
+	else{
+		$node->title = $title;
+	}
+		
+	$node->language = LANGUAGE_NONE; // Or e.g. 'en' if locale is enabled
+	
+	$node->uid = 1; // UID of the author of the node; or use $node->name
+	
+	$node->body[$node->language][0]['value']   = $body;
+	$node->body[$node->language][0]['summary'] = text_summary($body);
+	$node->body[$node->language][0]['format']  = 'plain_html';
+	
+	// I prefer using pathauto, which would override the below path
+	$alias = strtolower($node->title);
+	$node->path = array('alias' => $alias);
+	
+	if($node = node_submit($node)) { // Prepare node for saving
+	    node_save($node);
+	    echo "Node with nid " . $node->nid . " saved!\n";
+	    
+	    // Create a Menu link in the main menu.
+		  $item = array(
+		    'link_title' => $node->title,
+		    'link_path' => 'node/'.$node->nid,
+		    'menu_name' => 'main-menu',
+		    'weight' => $weight,
+		  );
+		  menu_link_save($item);
+	    
+	}
+	
+	
+}
+
+function druplaevental_create_imagestyles(){
+	
+	$style = image_style_save(array('name' => 'retina','label' => 'Retina'));
+		
+	$effect_scale = array(
+        'label' => 'Skalierung',
+        'help' => 'Eine Skalierung behält das Seitenverhältnis des Originalbildes bei. Sofern nur eine Seitenlänge angegeben ist, wird die andere berechnet.',
+        'effect callback' => 'image_scale_effect',
+        'dimensions callback' => 'image_scale_dimensions',
+        'form callback' => 'image_scale_form',
+        'summary theme' => 'image_scale_summary',
+        'module' => 'image',
+        'name' => 'image_scale',
+        'data' => array(
+          'width' => 2200,
+          'height' => '',
+          'upscale' => 1,
+        ),
+        'weight' => -10,
+        'isid' => $style['isid'],
+      );
+    image_effect_save($effect_scale);
+      
+	$effect_hires = array(
+        'label' => 'Hi-Res (x2)',
+        'help' => '<img> dimensions will be half the dimensions of the styled image.',
+        'effect callback' => 'hires_images_effect',
+        'dimensions callback' => 'hires_images_dimensions',
+        'module' => 'hires_images',
+        'name' => 'image_hires',
+        'data' => array(),
+        'weight' => -8,
+        'isid' => $style['isid'],
+    );
+    image_effect_save($effect_hires);
+    
+    $effect_quality = array(
+        'label' => 'Qualität',
+        'help' => 'Legt die Bildqualität für JPEG-Bilder fest. Sie kann Werte von 0 bis 100 annehmen, wobei größere Werte bessere Bildqualität, aber größere Dateien bedeuten.',
+        'effect callback' => '_image_style_quality_apply',
+        'form callback' => 'image_style_quality_style_form',
+        'dimensions passthrough' => TRUE,
+        'summary theme' => 'image_style_quality_summary',
+        'module' => 'image_style_quality',
+        'name' => 'image_style_quality',
+        'data' => array(
+          'quality' => 50,
+        ),
+        'weight' => -5,
+        'isid' => $style['isid'],
+      );
+	image_effect_save($effect_quality);
+
+		
+}
+
+function druplaevental_create_content_types(){
+	
+	// Insert default pre-defined node types into the database. For a complete
+  // list of available node type attributes, refer to the node type API
+  // documentation at: http://api.drupal.org/api/HEAD/function/hook_node_info.
+  $types = array(
+    array(
+      'type' => 'page',
+      'name' => st('Basic page'),
+      'base' => 'node_content',
+      'description' => st("Use <em>basic pages</em> for your static content, such as an 'About us' page."),
+      'custom' => 1,
+      'modified' => 1,
+      'locked' => 0,
+      'comment' => 0,
+    ),
+    array(
+      'type' => 'article',
+      'name' => st('Article'),
+      'base' => 'node_content',
+      'description' => st('Use <em>articles</em> for time-sensitive content like news, press releases or blog posts.'),
+      'custom' => 1,
+      'modified' => 1,
+      'locked' => 0,
+    ),
+  );
+  
+
+  foreach ($types as $type) {
+    $type = node_type_set_defaults($type);
+    node_type_save($type);
+    node_add_body_field($type);
+  }
+  
+   // Insert default pre-defined RDF mapping into the database.
+  $rdf_mappings = array(
+    array(
+      'type' => 'node',
+      'bundle' => 'page',
+      'mapping' => array(
+        'rdftype' => array('foaf:Document'),
+      ),
+    ),
+    array(
+      'type' => 'node',
+      'bundle' => 'article',
+      'mapping' => array(
+        'field_image' => array(
+          'predicates' => array('og:image', 'rdfs:seeAlso'),
+          'type' => 'rel',
+        ),
+        'field_tags' => array(
+          'predicates' => array('dc:subject'),
+          'type' => 'rel',
+        ),
+      ),
+    ),
+  );
+  foreach ($rdf_mappings as $rdf_mapping) {
+    rdf_mapping_save($rdf_mapping);
+  }
+
+}
+
+function druplaevental_create_fields(){
+	// Create a default vocabulary named "Tags", enabled for the 'article' content type.
+  $description = st('Use tags to group articles on similar topics into categories.');
+  $vocabulary = (object) array(
+    'name' => st('Tags'),
+    'description' => $description,
+    'machine_name' => 'tags',
+  );
+  taxonomy_vocabulary_save($vocabulary);
+
+  $field = array(
+    'field_name' => 'field_' . $vocabulary->machine_name,
+    'type' => 'taxonomy_term_reference',
+    // Set cardinality to unlimited for tagging.
+    'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+    'settings' => array(
+      'allowed_values' => array(
+        array(
+          'vocabulary' => $vocabulary->machine_name,
+          'parent' => 0,
+        ),
+      ),
+    ),
+  );
+  field_create_field($field);
+
+  $help = st('Enter a comma-separated list of words to describe your content.');
+  $instance = array(
+    'field_name' => 'field_' . $vocabulary->machine_name,
+    'entity_type' => 'node',
+    'label' => 'Tags',
+    'bundle' => 'article',
+    'description' => $help,
+    'widget' => array(
+      'type' => 'taxonomy_autocomplete',
+      'weight' => -4,
+    ),
+    'display' => array(
+      'default' => array(
+        'type' => 'taxonomy_term_reference_link',
+        'weight' => 10,
+      ),
+      'teaser' => array(
+        'type' => 'taxonomy_term_reference_link',
+        'weight' => 10,
+      ),
+    ),
+  );
+  field_create_instance($instance);
+
+
+  // Create an image field named "Image", enabled for the 'article' content type.
+  // Many of the following values will be defaulted, they're included here as an illustrative examples.
+  // See http://api.drupal.org/api/function/field_create_field/7
+
+  $field = array(
+    'field_name' => 'field_image',
+    'type' => 'image',
+    'cardinality' => 1,
+    'locked' => FALSE,
+    'indexes' => array('fid' => array('fid')),
+    'settings' => array(
+      'uri_scheme' => 'public',
+      'default_image' => FALSE,
+    ),
+    'storage' => array(
+      'type' => 'field_sql_storage',
+      'settings' => array(),
+    ),
+  );
+  field_create_field($field);
+  
+  // Many of the following values will be defaulted, they're included here as an illustrative examples.
+  // See http://api.drupal.org/api/function/field_create_instance/7
+  $instance = array(
+    'field_name' => 'field_image',
+    'entity_type' => 'node',
+    'label' => 'Image',
+    'bundle' => 'article',
+    'description' => st('Upload an image to go with this article.'),
+    'required' => FALSE,
+
+    'settings' => array(
+      'file_directory' => 'field/image',
+      'file_extensions' => 'png gif jpg jpeg',
+      'max_filesize' => '',
+      'max_resolution' => '',
+      'min_resolution' => '',
+      'alt_field' => TRUE,
+      'title_field' => '',
+    ),
+
+    'widget' => array(
+      'type' => 'image_image',
+      'settings' => array(
+        'progress_indicator' => 'throbber',
+        'preview_image_style' => 'thumbnail',
+      ),
+      'weight' => -1,
+    ),
+
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'type' => 'image',
+        'settings' => array('image_style' => 'large', 'image_link' => ''),
+        'weight' => -1,
+      ),
+      'teaser' => array(
+        'label' => 'hidden',
+        'type' => 'image',
+        'settings' => array('image_style' => 'medium', 'image_link' => 'content'),
+        'weight' => -1,
+      ),
+    ),
+  );
+  field_create_instance($instance);
+  
+  
+  
+  $field = array(
+    'field_name' => 'field_images',
+    'type' => 'image',
+    'cardinality' => -1,
+    'locked' => FALSE,
+    'indexes' => array('fid' => array('fid')),
+    'settings' => array(
+      'uri_scheme' => 'public',
+      'default_image' => FALSE,
+    ),
+    'storage' => array(
+      'type' => 'field_sql_storage',
+      'settings' => array(),
+    ),
+  );
+  field_create_field($field);
+
+   $instance = array(
+    'bundle' => 'page',
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 1,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_images',
+    'label' => 'images',
+    'required' => 0,
+    'settings' => array(
+      'alt_field' => 0,
+      'default_image' => 0,
+      'file_directory' => 'images',
+      'file_extensions' => 'png gif jpg jpeg',
+      'max_filesize' => '',
+      'max_resolution' => '',
+      'min_resolution' => '',
+      'title_field' => 0,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'image',
+      'settings' => array(
+        'insert' => 1,
+        'insert_absolute' => 0,
+        'insert_class' => 'lazy',
+        'insert_default' => 'image_retina',
+        'insert_styles' => array(
+          '<all>' => '<all>',
+        ),
+        'insert_width' => 1088,
+        'preview_image_style' => 'retina',
+        'progress_indicator' => 'throbber',
+      ),
+      'type' => 'image_image',
+      'weight' => -3,
+    ),
+  );
+  field_create_instance($instance);
+   
+
+  return $field_bases;
+}
+
+function druplaevental_create_text_formats(){
+	
+	  // Add text formats.
+  $filtered_html_format = array(
+    'format' => 'filtered_html',
+    'name' => 'Filtered HTML',
+    'weight' => 0,
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0,
+        'status' => 1,
+      ),
+      // HTML filter.
+      'filter_html' => array(
+        'weight' => 1,
+        'status' => 1,
+      ),
+      // Line break filter.
+      'filter_autop' => array(
+        'weight' => 2,
+        'status' => 1,
+      ),
+      // HTML corrector filter.
+      'filter_htmlcorrector' => array(
+        'weight' => 10,
+        'status' => 1,
+      ),
+    ),
+  );
+  $filtered_html_format = (object) $filtered_html_format;
+  filter_format_save($filtered_html_format);
+
+  $full_html_format = array(
+    'format' => 'full_html',
+    'name' => 'Full HTML',
+    'weight' => 1,
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0,
+        'status' => 1,
+      ),
+      // Line break filter.
+      'filter_autop' => array(
+        'weight' => 1,
+        'status' => 1,
+      ),
+      // HTML corrector filter.
+      'filter_htmlcorrector' => array(
+        'weight' => 10,
+        'status' => 1,
+      ),
+      
+    ),
+  );
+  $full_html_format = (object) $full_html_format;
+  filter_format_save($full_html_format);
+  
+  $plain_html_format = array(
+    'format' => 'plain_html',
+    'name' => 'Plain HTML',
+    'weight' => 2,
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0,
+        'status' => 0,
+      ),
+      // Line break filter.
+      'filter_autop' => array(
+        'weight' => 1,
+        'status' => 0,
+      ),
+      // HTML corrector filter.
+      'filter_htmlcorrector' => array(
+        'weight' => 10,
+        'status' => 0,
+      ),
+      
+    ),
+  );
+  $plain_html_format = (object) $plain_html_format;
+  filter_format_save($plain_html_format);
+
+  
+  // Add text formats.
+  $markdown_format = array(
+    'format' => 'markdown',
+    'name' => 'Markdown',
+    'weight' => 3,
+    'filters' => array(
+      'filter_markdown' => array( // Markdown filter.
+        'weight' => 0,
+        'status' => 1,
+      ),
+      
+    ),
+  );
+  $markdown_format = (object) $markdown_format;
+  filter_format_save($markdown_format);
+  
+	// Enable default permissions for system roles.
+	$filtered_html_permission = filter_permission_name($filtered_html_format);
+	user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array('access content', 'access comments', $filtered_html_permission));
+	user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('access content', 'access comments', 'post comments', 'skip comment approval',  $filtered_html_permission));
+}
+
+?>

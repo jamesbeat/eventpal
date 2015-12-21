@@ -1,0 +1,9 @@
+core = 7.x
+api = 2
+projects[] = drupal
+
+; Distribution
+projects[eventpal][type] = "profile"
+projects[eventpal][download][type] = "git"
+projects[eventpal][download][url] = "https://github.com/jamesbeat/eventpal.git"
+projects[eventpal][download][branch] = "master"

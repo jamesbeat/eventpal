@@ -1,0 +1,95 @@
+name = Drupal Eventpal
+description = Installation Profile for Event Management Site based on Drupal 7.
+core = 7.x
+
+dependencies[] = block
+dependencies[] = color
+dependencies[] = comment
+dependencies[] = contextual
+dependencies[] = dashboard
+dependencies[] = update
+dependencies[] = node
+dependencies[] = field_ui
+dependencies[] = file
+dependencies[] = filter
+dependencies[] = number
+dependencies[] = path
+dependencies[] = syslog
+dependencies[] = dblog
+dependencies[] = ds_ui
+dependencies[] = ds_extras
+dependencies[] = node_reference
+dependencies[] = user_reference
+dependencies[] = rdf
+dependencies[] = taxonomy
+
+dependencies[] = ctools
+dependencies[] = ds
+dependencies[] = entity
+dependencies[] = jquery_update
+dependencies[] = libraries
+dependencies[] = rules
+dependencies[] = rules_admin
+dependencies[] = token
+dependencies[] = variable
+
+;Content Modules
+dependencies[] = content_access
+dependencies[] = blockify
+dependencies[] = exclude_node_title
+dependencies[] = field_group
+dependencies[] = image_style_quality
+dependencies[] = insert
+dependencies[] = insert_block
+dependencies[] = references
+dependencies[] = tablefield
+dependencies[] = markdown
+dependencies[] = ajax_markup
+
+dependencies[] = focal_point
+dependencies[] = insert
+dependencies[] = styleguide
+
+;Image Modules
+dependencies[] = image_style_quality
+dependencies[] = hires_images
+
+;Menu Modules
+dependencies[] = menu_attributes
+dependencies[] = menu_position
+dependencies[] = menu_views
+dependencies[] = multiple_node_menu
+
+;Views
+dependencies[] = views
+dependencies[] = views_ui
+dependencies[] = views_bulk_operations
+dependencies[] = views_php
+
+;Registration
+dependencies[] = registration
+dependencies[] = registration_views
+dependencies[] = registration_waitlist
+dependencies[] = registration_entity_access
+dependencies[] = calendar
+dependencies[] = date
+dependencies[] = location
+
+;Email
+dependencies[] = mailsystem
+dependencies[] = smtp
+dependencies[] = htmlmail
+dependencies[] = mimemail
+
+;Admin Modules
+dependencies[] = admin_menu
+dependencies[] = backup_migrate
+dependencies[] = module_filter
+dependencies[] = security_review
+dependencies[] = devel
+
+; Multilingual modules.
+dependencies[] = i18n
+dependencies[] = i18nviews
+dependencies[] = l10n_update
+dependencies[] = language_switcher
